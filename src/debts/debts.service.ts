@@ -36,10 +36,10 @@ export class DebtsService {
     if (existingDebt) {
       await this.updateDebt(existingDebt, fromUserId, quantity);
     } else {
-      await this.createDebt(fromUserId, createDebtDto);
+      await this.createRecord(this.debtModel, fromUserId, createDebtDto);
     }
 
-    await this.createTransaction(fromUserId, createDebtDto);
+    await this.createRecord(this.transactionModel, fromUserId, createDebtDto);
 
     return { message: 'Debt successfully added.' };
   }
@@ -75,7 +75,7 @@ export class DebtsService {
     fromUserId: string,
     withUserId: string,
   ): Promise<Debt | null> {
-    return this.debtModel
+    return await this.debtModel
       .findOne({
         $or: [
           { fromUser: fromUserId, toUser: withUserId },
@@ -103,22 +103,12 @@ export class DebtsService {
     }
   }
 
-  private async createDebt(
+  private async createRecord(
+    model: typeof this.debtModel | typeof this.transactionModel,
     fromUserId: string,
     debt: CreateDebtDto,
   ): Promise<void> {
-    await this.debtModel.create({
-      fromUser: fromUserId,
-      toUser: debt.withUserId,
-      quantity: debt.quantity,
-    });
-  }
-
-  private async createTransaction(
-    fromUserId: string,
-    debt: CreateDebtDto,
-  ): Promise<void> {
-    await this.transactionModel.create({
+    await model.create({
       fromUser: fromUserId,
       toUser: debt.withUserId,
       quantity: debt.quantity,
